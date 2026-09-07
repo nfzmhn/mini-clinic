@@ -1,0 +1,62 @@
+.queue-board {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background: #f4f7fc;
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 768px) { .queue-board { padding: 2.5rem; } }
+.queue-board__glow1 {
+  position: absolute; top: -10rem; left: 50%; transform: translateX(-50%);
+  width: 55rem; height: 30rem;
+  background: linear-gradient(to bottom, rgba(80,217,254,0.2), rgba(13,43,86,0.08), transparent);
+  filter: blur(40px); pointer-events: none;
+}
+.queue-header {
+  width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+  padding: 1.25rem 2rem; border-radius: 1rem; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 1px solid rgba(220,233,255,0.6); display: flex; align-items: center; justify-content: space-between;
+}
+.queue-hero {
+  flex: 1; display: flex; align-items: center; justify-content: center; margin: 1.5rem 0;
+}
+.queue-hero__card {
+  width: 100%; max-width: 64rem; background: #ffffff; border-radius: 1.5rem;
+  box-shadow: 0 20px 60px rgba(13,43,86,0.12); border: 1px solid rgba(220,233,255,0.7);
+  overflow: hidden; transition: all 0.5s;
+}
+.queue-hero__card--pulse { box-shadow: 0 24px 80px rgba(13,43,86,0.2); transform: scale(1.01); }
+.queue-hero__accent {
+  width: 100%; background: #0d2b56; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; color: #ffffff;
+}
+.queue-hero__ticket {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
+  font-size: 8.5rem; line-height: 1; letter-spacing: -0.05em; color: #001637;
+  transition: all 0.3s;
+}
+@media (min-width: 640px) { .queue-hero__ticket { font-size: 10.5rem; } }
+@media (min-width: 768px) { .queue-hero__ticket { font-size: 12.5rem; } }
+.queue-hero__ticket--pulse { transform: scale(1.1); color: #00677d; }
+.queue-hero__patient { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.75rem; color: #0b1c30; }
+@media (min-width: 768px) { .queue-hero__patient { font-size: 2.25rem; } }
+.queue-hero__direction {
+  width: 100%; max-width: 32rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+  padding: 1rem 2rem; border-radius: 1rem; background: #003320; color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.queue-toast {
+  position: fixed; top: 2rem; right: 2.5rem; z-index: 50;
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem;
+  border-radius: 9999px; background: #001637; color: #ffffff; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  transition: all 0.3s;
+}
+.queue-controls {
+  position: fixed; bottom: 1rem; right: 1.5rem; z-index: 40;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12); border: 1px solid #dce9ff;
+  border-radius: 0.75rem; padding: 0.5rem; display: flex; align-items: center; gap: 0.5rem;
+}

@@ -1,0 +1,9 @@
+**/stitch_html/
+stitch_html/
+**/stitch.html
+**/node_modules/
+node_modules/
+**/dist/
+dist/
+**/.env
+.env

@@ -1,0 +1,31 @@
+.app-layout { min-height: 100vh; display: flex; background: #f8f9ff; }
+.app-sidebar {
+  width: 16rem; background: #ffffff; border-right: 1px solid rgba(196,198,208,0.3);
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: sticky; top: 0; height: 100vh; shrink: 0;
+}
+@media (min-width: 1280px) { .app-sidebar { width: 18rem; } }
+.app-sidebar__brand { height: 5rem; padding: 0 1.5rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid rgba(196,198,208,0.2); }
+.app-sidebar__nav { padding: 1rem 0.75rem; }
+.app-sidebar__nav-title { padding: 0 0.75rem; margin-bottom: 0.5rem; font-size: 0.7rem; font-weight: 700; color: #747780; text-transform: uppercase; letter-spacing: 0.06em; }
+.app-sidebar__link {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; border-radius: 0.75rem;
+  font-size: 0.85rem; font-weight: 600; color: #44474f; transition: all 0.15s; text-decoration: none;
+}
+.app-sidebar__link:hover { background: #eff4ff; color: #0b1c30; }
+.app-sidebar__link--active { background: #001637; color: #ffffff; box-shadow: 0 2px 8px rgba(0,22,55,0.2); }
+.app-sidebar__bottom { padding: 0.75rem; border-top: 1px solid rgba(196,198,208,0.2); background: #ffffff; }
+.app-workspace { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; }
+.app-topbar {
+  height: 5rem; background: #ffffff; border-bottom: 1px solid rgba(196,198,208,0.3);
+  position: sticky; top: 0; z-index: 30; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.app-topbar__search { flex: 1; max-width: 32rem; position: relative; }
+.app-topbar__search input {
+  width: 100%; padding: 0.55rem 2.5rem 0.55rem 2.5rem; border-radius: 0.75rem;
+  background: #eff4ff; border: 1px solid rgba(196,198,208,0.4); font-size: 0.85rem; outline: none;
+}
+.app-topbar__search input:focus { border-color: #001637; }
+.app-main { flex: 1; padding: 1.5rem; }
+@media (min-width: 1024px) { .app-main { padding: 2rem; } }
+.app-main__inner { display: flex; flex-direction: column; gap: 1.5rem; }

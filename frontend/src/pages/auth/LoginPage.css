@@ -1,0 +1,47 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: #f8f9ff;
+  background-image: radial-gradient(ellipse 80% 60% at 50% -15%, rgba(80, 217, 254, 0.12), transparent 70%);
+}
+.login-card {
+  width: 100%;
+  max-width: 72rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(13, 43, 86, 0.12);
+  border: 1px solid rgba(196, 198, 208, 0.3);
+  background: #ffffff;
+  min-height: 680px;
+}
+@media (min-width: 1024px) { .login-card { grid-template-columns: 5fr 7fr; } }
+.login-left {
+  background: #0d2b56;
+  padding: 2rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.login-left__glow1 { position: absolute; right: -5rem; top: -5rem; width: 24rem; height: 24rem; border-radius: 50%; background: rgba(80,217,254,0.1); filter: blur(40px); pointer-events: none; }
+.login-left__glow2 { position: absolute; left: -4rem; bottom: 0; width: 20rem; height: 20rem; border-radius: 50%; background: rgba(69,94,140,0.15); filter: blur(32px); pointer-events: none; }
+.login-right { background: #ffffff; padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; }
+@media (min-width: 1024px) { .login-left, .login-right { padding: 2.5rem; } }
+.login-label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+.login-input { width: 100%; background: #ffffff; font-size: 0.875rem; border-radius: 0.5rem; padding: 0.65rem 0.75rem; border: 1px solid #c4c6d0; outline: none; }
+.login-input:focus { border-color: #00677d; background: #eff4ff; }
+.login-error { font-size: 0.7rem; color: #ba1a1a; margin-top: 0.25rem; }
+.login-btn-primary {
+  width: 100%; background: #0d2b56; color: #ffffff; font-size: 0.875rem; font-weight: 600;
+  padding: 0.75rem 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(13,43,86,0.2); transition: background 0.15s;
+}
+.login-btn-primary:hover { background: #001637; }
+.login-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }

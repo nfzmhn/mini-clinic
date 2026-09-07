@@ -1,0 +1,84 @@
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: #f0f4f9;
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.register-card {
+  width: 100%;
+  max-width: 64rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(13,43,86,0.15);
+  border: 1px solid rgba(203,213,225,0.8);
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 1024px) { .register-card { flex-direction: row; } }
+.register-left {
+  background: linear-gradient(135deg, #071831 0%, #0d2b56 50%, #164282 100%);
+  color: #ffffff;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 1024px) { .register-left { width: 41.666%; padding: 2.5rem; } }
+.register-right {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #ffffff;
+}
+@media (min-width: 1024px) { .register-right { width: 58.333%; padding: 2.5rem; } }
+.register-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+.register-label span { color: #f43f5e; }
+.register-input, .register-select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s;
+}
+.register-input::placeholder { color: #94a3b8; }
+.register-input:focus, .register-select:focus {
+  background: #ffffff;
+  border-color: #0d2b56;
+  box-shadow: 0 0 0 3px rgba(13,43,86,0.1);
+}
+.register-error { font-size: 0.7rem; color: #e11d48; margin-top: 0.25rem; }
+.register-btn-primary {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background: #0d2b56;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(13,43,86,0.2);
+  transition: background 0.15s;
+}
+.register-btn-primary:hover { background: #164282; }
+.register-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }

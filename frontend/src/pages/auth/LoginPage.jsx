@@ -28,7 +28,8 @@ export default function LoginPage() {
       const token = res.data?.token || res.token
       const user = res.data?.user || res.user
       if (token) saveSession(token, user)
-      navigate('/', { replace: true })
+      const dest = user?.role === 'ADMIN' ? '/admin' : user?.role === 'DOCTOR' ? '/doctor/queue' : '/dashboard'
+      navigate(dest, { replace: true })
     } catch (e) {
       const msg = e.response?.data?.message || e.response?.data?.errors?.[0]?.message || 'Login gagal. Periksa kredensial.'
       setServerError(msg)

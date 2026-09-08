@@ -1,34 +1,68 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { subscribeQueueUpdate } from '../../../services/queueSync'
+import { getRegistrations } from '../../../services/registration'
 import './QueueBoardPage.css'
 
-const queues = [
-  { room: 'POLI UMUM — RUANG PERIKSA 01', doctor: 'dr. Danang Wicaksono, Sp.PD', current: { ticket: 'A-012', name: 'Budi Pratama' }, pool: [{ ticket: 'A-013', name: 'Siti Aminah' }, { ticket: 'A-014', name: 'Hendra Gunawan' }, { ticket: 'A-015', name: 'Ratna Sari' }] },
-]
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('user') || 'null') } catch { return null }
+}
 
 export default function QueueBoardPage() {
-  const [idx, setIdx] = useState(0)
-  const [current, setCurrent] = useState(queues[0].current)
-  const [pools, setPools] = useState(queues.map(q => [...q.pool]))
+  const user = getUser()
+
+  const [current, setCurrent] = useState(null)
   const [clock, setClock] = useState(new Date())
   const [pulse, setPulse] = useState(false)
   const [toast, setToast] = useState({ show: false, msg: '' })
-  const poli = queues[idx]
+
+  // Fetch real queue from API
+  const { data: regData, refetch } = useQuery({
+    queryKey: ['queue-board'],
+    queryFn: async () => {
+      const res = await getRegistrations({ status: 'Menunggu' })
+      return Array.isArray(res) ? res : (res?.data?.data || res?.data || [])
+    },
+    refetchInterval: 15000, // auto-refresh every 15 seconds
+  })
+
+  const { data: checkinData, refetch: refetchCheckin } = useQuery({
+    queryKey: ['queue-board-checkin'],
+    queryFn: async () => {
+      const res = await getRegistrations({ status: 'CheckIn' })
+      return Array.isArray(res) ? res : (res?.data?.data || res?.data || [])
+    },
+    refetchInterval: 15000,
+  })
+
+  const menunggu = Array.isArray(regData) ? regData : []
+  const checkIns = Array.isArray(checkinData) ? checkinData : []
 
   useEffect(() => {
     const t = setInterval(() => setClock(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
 
+  // Listen to BroadcastChannel for call-next events
   useEffect(() => {
     const unsub = subscribeQueueUpdate((data) => {
       if (data.type === 'CALL_NEXT') {
         setCurrent({ ticket: data.ticket, name: data.name })
         triggerCall(data.ticket, data.name)
+        refetch()
+        refetchCheckin()
       }
     })
     return unsub
   }, [])
+
+  // Set current to first CheckIn if available
+  useEffect(() => {
+    if (checkIns.length > 0 && !current) {
+      const first = checkIns[0]
+      setCurrent({ ticket: first.queueNumber, name: first.patient?.name || '-' })
+    }
+  }, [checkIns])
 
   const chime = useCallback(() => {
     try {
@@ -55,32 +89,24 @@ export default function QueueBoardPage() {
     setTimeout(() => setToast({ show: false, msg: '' }), 3200)
   }, [chime])
 
-  useEffect(() => {
-    setCurrent(queues[idx].current)
-  }, [idx])
-
-  const handleNext = () => {
-    const pool = pools[idx]
-    if (pool.length > 0) {
-      const next = pool[0]
-      const newPools = pools.map((p, i) => i === idx ? p.slice(1) : p)
-      setPools(newPools)
-      setCurrent(next)
-      triggerCall(next.ticket, next.name)
-    }
-  }
-
-  const handleRecall = () => triggerCall(current.ticket, current.name)
-
-  const handleSwitch = () => {
-    const nextIdx = (idx + 1) % queues.length
-    setIdx(nextIdx)
-    const c = queues[nextIdx].current
-    triggerCall(c.ticket, c.name)
+  const handleRecall = () => {
+    if (current) triggerCall(current.ticket, current.name)
   }
 
   const dateStr = clock.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const timeStr = clock.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+
+  // Group menunggu by poli
+  const grouped = menunggu.reduce((acc, r) => {
+    const poliName = r.poli?.name || 'Poli Umum'
+    if (!acc[poliName]) acc[poliName] = []
+    acc[poliName].push(r)
+    return acc
+  }, {})
+
+  const displayCurrent = current || (checkIns[0] ? { ticket: checkIns[0].queueNumber, name: checkIns[0].patient?.name || '-' } : null)
+  const poliName = checkIns[0]?.poli?.name || 'POLIKLINIK'
+  const doctorName = checkIns[0]?.doctor?.username ? `dr. ${checkIns[0].doctor.username}` : 'Dokter Jaga'
 
   return (
     <div className="queue-board">
@@ -96,56 +122,113 @@ export default function QueueBoardPage() {
 
       <header className="queue-header">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#0d2b56] flex items-center justify-center text-white shadow-md"><span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_hospital</span></div>
+          <div className="w-14 h-14 rounded-2xl bg-[#0d2b56] flex items-center justify-center text-white shadow-md">
+            <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_hospital</span>
+          </div>
           <div>
-            <div className="flex items-center gap-3"><h1 className="font-display font-extrabold text-2xl md:text-3xl text-[#001637] tracking-tight">Medvita Clinic</h1><span className="w-2 h-2 rounded-full bg-[#00677d]" /><span className="font-medium text-base text-[#44474f]">Layar Antrean Poliklinik</span></div>          </div>
+            <div className="flex items-center gap-3">
+              <h1 className="font-display font-extrabold text-2xl md:text-3xl text-[#001637] tracking-tight">Medvita Clinic</h1>
+              <span className="w-2 h-2 rounded-full bg-[#00677d]" />
+              <span className="font-medium text-base text-[#44474f]">Layar Antrean Poliklinik</span>
+            </div>
+          </div>
         </div>
         <div className="hidden md:flex items-center gap-6 bg-[#eff4ff] px-7 py-3 rounded-xl border border-[#dce9ff]/50">
           <div className="text-right"><div className="font-semibold text-sm text-[#44474f]">{dateStr}</div><div className="text-xs font-medium text-[#00677d]">Zona Waktu Indonesia Barat</div></div>
           <div className="h-10 w-px bg-[#d3e4fe]" />
-          <div className="flex items-baseline gap-1.5"><span className="font-display font-extrabold text-3xl md:text-4xl text-[#001637] tracking-tight tabular-nums">{timeStr}</span><span className="font-bold text-xs text-[#44474f]">WIB</span></div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-extrabold text-3xl md:text-4xl text-[#001637] tracking-tight tabular-nums">{timeStr}</span>
+            <span className="font-bold text-xs text-[#44474f]">WIB</span>
+          </div>
         </div>
       </header>
 
       <main className="queue-hero">
-        <div className={`queue-hero__card ${pulse ? 'queue-hero__card--pulse' : ''}`}>
-          <div className="queue-hero__accent">
-            <div className="flex items-center gap-3"><span className="relative flex h-3.5 w-3.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6ffbbe] opacity-80" /><span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#4edea3]" /></span><span className="font-display font-bold tracking-widest text-sm uppercase text-[#6ffbbe]">SEDANG DIPANGGIL • CURRENT CALL</span></div>
-            <div className="flex items-center gap-2 text-[#7a93c4]"><span className="material-symbols-outlined text-xl animate-pulse text-[#50d9fe]">graphic_eq</span><span className="text-xs font-semibold tracking-wider">PENGUMUMAN SUARA ELEKTRONIK</span></div>
-          </div>
-          <div className="p-8 md:p-14 flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-[#dce9ff]/90 text-[#001637] shadow-sm mb-4 border border-[#d3e4fe]">
-              <span className="material-symbols-outlined text-[#00677d] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>meeting_room</span>
-              <span className="font-display font-bold text-xl md:text-2xl uppercase">{poli.room}</span>
-              <span className="text-[#c4c6d0] font-bold">•</span>
-              <div className="flex items-center gap-1.5 text-[#44474f] text-base font-semibold"><span className="material-symbols-outlined text-lg">stethoscope</span>{poli.doctor}</div>
-            </div>
-            <div className="my-3 relative flex items-center justify-center py-2 px-12">
-              <div className="absolute inset-0 bg-[#50d9fe]/20 rounded-full blur-3xl pointer-events-none scale-125" />
-              <span className={`queue-hero__ticket ${pulse ? 'queue-hero__ticket--pulse' : ''}`}>{current.ticket}</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 mb-7">
+        {displayCurrent ? (
+          <div className={`queue-hero__card ${pulse ? 'queue-hero__card--pulse' : ''}`}>
+            <div className="queue-hero__accent">
               <div className="flex items-center gap-3">
-                <span className="text-xs md:text-sm font-bold text-[#44474f] uppercase tracking-widest">NAMA PASIEN:</span>
-                <span className="queue-hero__patient">{current.name}</span>
+                <span className="relative flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6ffbbe] opacity-80" />
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#4edea3]" />
+                </span>
+                <span className="font-display font-bold tracking-widest text-sm uppercase text-[#6ffbbe]">SEDANG DIPANGGIL • CURRENT CALL</span>
+              </div>
+              <div className="flex items-center gap-2 text-[#7a93c4]">
+                <span className="material-symbols-outlined text-xl animate-pulse text-[#50d9fe]">graphic_eq</span>
+                <span className="text-xs font-semibold tracking-wider">PENGUMUMAN SUARA ELEKTRONIK</span>
               </div>
             </div>
-            <div className="queue-hero__direction">
-              <span className="material-symbols-outlined text-2xl text-[#6ffbbe] font-bold">arrow_forward_ios</span>
-              <span className="font-display text-lg md:text-xl font-bold tracking-wide">Silakan Masuk Menuju Ruang Periksa 01</span>
+            <div className="p-8 md:p-14 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-[#dce9ff]/90 text-[#001637] shadow-sm mb-4 border border-[#d3e4fe]">
+                <span className="material-symbols-outlined text-[#00677d] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>meeting_room</span>
+                <span className="font-display font-bold text-xl md:text-2xl uppercase">{poliName.toUpperCase()}</span>
+                <span className="text-[#c4c6d0] font-bold">•</span>
+                <div className="flex items-center gap-1.5 text-[#44474f] text-base font-semibold">
+                  <span className="material-symbols-outlined text-lg">stethoscope</span>{doctorName}
+                </div>
+              </div>
+              <div className="my-3 relative flex items-center justify-center py-2 px-12">
+                <div className="absolute inset-0 bg-[#50d9fe]/20 rounded-full blur-3xl pointer-events-none scale-125" />
+                <span className={`queue-hero__ticket ${pulse ? 'queue-hero__ticket--pulse' : ''}`}>{displayCurrent.ticket}</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 mb-7">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs md:text-sm font-bold text-[#44474f] uppercase tracking-widest">NAMA PASIEN:</span>
+                  <span className="queue-hero__patient">{displayCurrent.name}</span>
+                </div>
+              </div>
+              <div className="queue-hero__direction">
+                <span className="material-symbols-outlined text-2xl text-[#6ffbbe] font-bold">arrow_forward_ios</span>
+                <span className="font-display text-lg md:text-xl font-bold tracking-wide">Silakan Masuk Menuju Ruang Periksa</span>
+              </div>
+            </div>
+            <div className="bg-[#e5eeff]/60 border-t border-[#dce9ff] px-8 py-3 flex items-center justify-between text-[#44474f] text-sm">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#00677d] text-base">verified</span>
+                <span className="font-semibold text-[#001637]">BPJS & Asuransi Terverifikasi</span>
+              </div>
+              <div className="flex items-center gap-5">
+                <span>Menunggu: <strong className="text-[#001637]">{menunggu.length} pasien</strong></span>
+              </div>
             </div>
           </div>
-          <div className="bg-[#e5eeff]/60 border-t border-[#dce9ff] px-8 py-3 flex items-center justify-between text-[#44474f] text-sm">
-            <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[#00677d] text-base">verified</span><span className="font-semibold text-[#001637]">BPJS &amp; Asuransi Terverifikasi</span></div>
-            <div className="flex items-center gap-5"><span>Kategori: <strong className="text-[#001637]">Reguler / Non-Emergency</strong></span><span>• Rata-rata Sesi: <strong className="text-[#001637]">12 Menit</strong></span></div>
+        ) : (
+          <div className="queue-hero__card">
+            <div className="p-14 flex flex-col items-center text-center gap-4">
+              <span className="material-symbols-outlined text-5xl text-[#c4c6d0]">inbox</span>
+              <span className="font-display text-2xl font-bold text-[#44474f]">Belum Ada Antrean Dipanggil</span>
+              <span className="text-sm text-[#747780]">Panggil nomor antrean dari halaman Dashboard Petugas.</span>
+              <div className="text-xs text-[#44474f] mt-2">{menunggu.length > 0 ? `${menunggu.length} pasien sedang menunggu` : 'Tidak ada pasien menunggu saat ini'}</div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       <aside className="queue-controls">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dce9ff] hover:bg-[#d3e4fe] text-[#001637] font-semibold text-xs" onClick={handleRecall}><span className="material-symbols-outlined text-sm text-[#00677d]">repeat</span>Panggil Ulang</button>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d2b56] hover:bg-[#001637] text-white font-semibold text-xs" onClick={handleNext}><span className="material-symbols-outlined text-sm text-[#6ffbbe]">skip_next</span>Panggil Berikutnya</button>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#dce9ff] hover:bg-[#d3e4fe] text-[#001637] font-semibold text-xs" onClick={handleRecall} disabled={!displayCurrent}>
+          <span className="material-symbols-outlined text-sm text-[#00677d]">repeat</span>Panggil Ulang
+        </button>
       </aside>
+
+      {/* Waiting list panel */}
+      {menunggu.length > 0 && (
+        <div className="fixed bottom-16 left-4 right-4 md:left-auto md:right-6 md:w-72 bg-white/95 backdrop-blur rounded-2xl border border-[#c4c6d0]/40 shadow-lg p-4 max-h-64 overflow-y-auto">
+          <div className="text-xs font-bold text-[#001637] mb-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm text-[#00677d]">hourglass_top</span>
+            Antrian Menunggu ({menunggu.length})
+          </div>
+          <div className="flex flex-col gap-1">
+            {menunggu.slice(0, 8).map(r => (
+              <div key={r.id} className="flex items-center justify-between text-xs py-1 border-b border-[#eff4ff]">
+                <span className="font-bold text-[#001637]">{r.queueNumber}</span>
+                <span className="text-[#44474f] truncate ml-2">{r.patient?.name || '-'}</span>
+                <span className="text-[#747780] ml-2">{r.poli?.name || '-'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

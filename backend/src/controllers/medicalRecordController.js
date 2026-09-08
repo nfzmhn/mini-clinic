@@ -7,12 +7,13 @@ const schema = z.object({
   patientId: z.number(),
   doctorId: z.number(),
   subjective: z.string().min(1),
-  bp: z.string().min(1),
-  temp: z.number(),
-  weight: z.number(),
-  height: z.number(),
+  objective: z.string().optional().default(''),
+  bp: z.string().optional().default(''),
+  temp: z.number().optional().nullable(),
+  weight: z.number().optional().nullable(),
+  height: z.number().optional().nullable(),
   diagnosis: z.string().min(1),
-  therapy: z.string().min(1),
+  therapy: z.string().optional().default(''),
   actions: z.array(z.object({ name: z.string(), cost: z.number() })).optional(),
   prescription: z.object({
     notes: z.string().optional(),
@@ -41,7 +42,20 @@ export const create = async (req, res) => {
 }
 
 export const byPatient = async (req, res) => {
-  const data = await prisma.medicalRecord.findMany({ where: { patientId: Number(req.params.patientId) }, include: { actions: true, prescription: { include: { items: true } }, registration: true }, orderBy: { createdAt: 'desc' } })
+  const data = await prisma.medicalRecord.findMany({
+    where: { patientId: Number(req.params.patientId) },
+    include: {
+      actions: true,
+      prescription: { include: { items: true } },
+      registration: {
+        include: {
+          doctor: { select: { id: true, username: true } },
+          poli: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
   return success(res, data)
 }
 

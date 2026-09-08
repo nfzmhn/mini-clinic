@@ -25,6 +25,17 @@ export const list = async (req, res) => {
   return success(res, data)
 }
 
+export const getOne = async (req, res) => {
+  const id = Number(req.params.id)
+  if (isNaN(id)) return failure(res, 'ID tidak valid', 400)
+  const data = await prisma.registration.findUnique({
+    where: { id },
+    include: { patient: true, doctor: { select: { id: true, username: true, role: true } }, poli: true },
+  })
+  if (!data) return failure(res, 'Registration tidak ditemukan', 404)
+  return success(res, data)
+}
+
 export const create = async (req, res) => {
   const parsed = schema.safeParse(req.body)
   if (!parsed.success) return failure(res, 'Validation failed', 400, parsed.error.errors)
@@ -33,7 +44,7 @@ export const create = async (req, res) => {
   const today = new Date(); today.setHours(0,0,0,0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
   const count = await prisma.registration.count({ where: { poliId: parsed.data.poliId, visitDate: { gte: today, lt: tomorrow } } })
-  const queueNumber = `${poli.code}${String(count + 1).padStart(3, '0')}`
+  const queueNumber = `${poli.code}-${String(count + 1).padStart(4, '0')}`
   const reg = await prisma.registration.create({ data: { ...parsed.data, queueNumber, visitDate: new Date() } })
   return success(res, reg, 'Created', 201)
 }

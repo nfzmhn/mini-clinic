@@ -49,6 +49,35 @@ export const update = async (req, res) => {
 }
 
 export const remove = async (req, res) => {
-  await prisma.patient.delete({ where: { id: Number(req.params.id) } }).catch(() => null)
-  return success(res, null, 'Deleted')
+  const id = Number(req.params.id)
+  if (isNaN(id)) return failure(res, 'ID tidak valid', 400)
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Hapus MedicalAction & PrescriptionItem via MedicalRecord
+      const records = await tx.medicalRecord.findMany({
+        where: { patientId: id },
+        select: { id: true, prescription: { select: { id: true } } },
+      })
+
+      for (const rec of records) {
+        if (rec.prescription) {
+          await tx.prescriptionItem.deleteMany({ where: { prescriptionId: rec.prescription.id } })
+          await tx.prescription.delete({ where: { id: rec.prescription.id } })
+        }
+        await tx.medicalAction.deleteMany({ where: { medicalRecordId: rec.id } })
+        await tx.medicalRecord.delete({ where: { id: rec.id } })
+      }
+
+      // 2. Hapus semua Registrasi pasien
+      await tx.registration.deleteMany({ where: { patientId: id } })
+
+      // 3. Hapus pasien
+      await tx.patient.delete({ where: { id } })
+    })
+
+    return success(res, null, 'Pasien berhasil dihapus')
+  } catch (e) {
+    return failure(res, `Gagal menghapus pasien: ${e.message}`, 400)
+  }
 }

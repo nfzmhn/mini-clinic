@@ -7,6 +7,7 @@ import patientRoute from './routes/patientRoute.js'
 import poliRoute from './routes/poliRoute.js'
 import registrationRoute from './routes/registrationRoute.js'
 import medicalRecordRoute from './routes/medicalRecordRoute.js'
+import userRoute from './routes/userRoute.js'
 import { stats } from './controllers/dashboardController.js'
 import { authenticate } from './middleware/auth.js'
 import { failure } from './utils/response.js'
@@ -23,6 +24,7 @@ app.use('/api/patients', patientRoute)
 app.use('/api/polis', poliRoute)
 app.use('/api/registrations', registrationRoute)
 app.use('/api/medical-records', medicalRecordRoute)
+app.use('/api/users', userRoute)
 app.get('/api/dashboard', authenticate, stats)
 
 app.use((req, res) => failure(res, 'Route not found', 404))

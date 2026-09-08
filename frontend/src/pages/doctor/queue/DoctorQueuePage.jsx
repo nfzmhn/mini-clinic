@@ -1,12 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getRegistrations } from '../../../services/registration'
 import './DoctorQueuePage.css'
 
-const queueData = [
-  { no: 'A-012', time: '08:15 WIB', name: 'Budi Pratama', nik: '3271021405900003', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono, Sp.PD', status: 'CheckIn' },
-  { no: 'A-013', time: '08:42 WIB', name: 'Siti Aminah', nik: '3271021405900004', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono, Sp.PD', status: 'Menunggu' },
-  { no: 'A-014', time: '09:05 WIB', name: 'Hendra Gunawan', nik: '3271021405900005', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono, Sp.PD', status: 'Menunggu' },
-  { no: 'A-015', time: '09:18 WIB', name: 'Ratna Sari', nik: '3271021405900006', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono, Sp.PD', status: 'Menunggu' },
-]
+function getUser() {
+  try { return JSON.parse(localStorage.getItem('user') || 'null') } catch { return null }
+}
 
 function statusBadge(s) {
   if (s === 'Menunggu') return 'bg-[#dce9ff] text-[#44474f]'
@@ -15,7 +15,31 @@ function statusBadge(s) {
   return 'bg-[#6ffbbe]/40 text-[#005236]'
 }
 
+function formatTime(dateStr) {
+  try { return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' } catch { return '-' }
+}
+
 export default function DoctorQueuePage() {
+  const navigate = useNavigate()
+  const user = getUser()
+
+  const { data: regData, isLoading } = useQuery({
+    queryKey: ['doctor-queue', user?.id],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10)
+      const res = await getRegistrations({ doctorId: user?.id, date: today })
+      return Array.isArray(res) ? res : (res?.data?.data || res?.data || [])
+    },
+  })
+
+  const queue = Array.isArray(regData) ? regData : []
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="doctor-page">
       <aside className="doctor-sidebar">
@@ -26,7 +50,10 @@ export default function DoctorQueuePage() {
           </div>
           <div className="p-4">
             <div className="p-3 bg-[#e5eeff] rounded-xl flex items-center justify-between">
-              <div className="flex flex-col"><span className="text-[0.7rem] font-bold text-[#44474f] uppercase tracking-wider">Lokasi Praktik</span><span className="text-sm font-bold text-primary">Poli Umum R.01</span></div>
+              <div className="flex flex-col">
+                <span className="text-[0.7rem] font-bold text-[#44474f] uppercase tracking-wider">Dokter</span>
+                <span className="text-sm font-bold text-primary">{user?.username || 'Dokter'}</span>
+              </div>
               <span className="h-2.5 w-2.5 rounded-full bg-[#00a874] ring-4 ring-[#6ffbbe]/40" />
             </div>
           </div>
@@ -34,7 +61,7 @@ export default function DoctorQueuePage() {
             <NavLink to="/doctor/queue" className={({isActive}) => `doctor-nav-link ${isActive ? 'doctor-nav-link--active' : ''}`}><span className="material-symbols-outlined text-[1.25rem]">format_list_numbered</span>Antrean Pasien</NavLink>
             <NavLink to="/doctor" end className={({isActive}) => `doctor-nav-link ${isActive ? 'doctor-nav-link--active' : ''}`}><span className="material-symbols-outlined text-[1.25rem]">clinical_notes</span>Formulir SOAP</NavLink>
             <NavLink to="/records" className={({isActive}) => `doctor-nav-link ${isActive ? 'doctor-nav-link--active' : ''}`}><span className="material-symbols-outlined text-[1.25rem]">folder_shared</span>Rekam Medis</NavLink>
-            <NavLink to="/login" className="doctor-nav-link doctor-nav-link--danger"><span className="material-symbols-outlined text-[1.25rem]">logout</span>Keluar</NavLink>
+            <button onClick={handleLogout} className="doctor-nav-link doctor-nav-link--danger w-full text-left"><span className="material-symbols-outlined text-[1.25rem]">logout</span>Keluar</button>
           </nav>
         </div>
       </aside>
@@ -45,20 +72,19 @@ export default function DoctorQueuePage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#eff4ff] rounded-full"><span className="h-2 w-2 rounded-full bg-[#00a874] animate-pulse" /><span className="text-xs font-bold text-[#005236]">Sesi Terbuka</span></span>
             <span className="hidden md:inline text-sm text-[#44474f]">Modul Pemeriksaan Rawat Jalan</span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-1.5 bg-[#eff4ff] px-3 py-1.5 rounded-lg text-[#44474f]"><span className="material-symbols-outlined text-[1.05rem]">badge</span><span className="text-xs font-bold">SIP: 446.1/4092/Dinkes/2023</span></div>
-            <div className="h-8 w-px bg-[#dce9ff] hidden md:block" />
-            <div className="flex items-center gap-2.5 text-right">
-              <div className="hidden sm:flex flex-col leading-none"><span className="text-sm font-bold text-primary">dr. Danang Wicaksono, Sp.PD</span><span className="text-xs text-[#44474f]">Dokter Penanggung Jawab Pelayanan</span></div>
-              <div className="w-8 h-8 rounded-full bg-[#b3ebff]/50 flex items-center justify-center text-secondary ring-2 ring-[#50d9fe]/30"><span className="material-symbols-outlined text-[1.2rem]">person</span></div>
+          <div className="flex items-center gap-2.5 text-right">
+            <div className="hidden sm:flex flex-col leading-none">
+              <span className="text-sm font-bold text-primary">{user?.username || 'Dokter'}</span>
+              <span className="text-xs text-[#44474f]">Dokter Penanggung Jawab</span>
             </div>
+            <div className="w-8 h-8 rounded-full bg-[#b3ebff]/50 flex items-center justify-center text-secondary ring-2 ring-[#50d9fe]/30"><span className="material-symbols-outlined text-[1.2rem]">person</span></div>
           </div>
         </header>
 
         <main className="doctor-content">
           <div className="flex flex-col gap-1">
-            <h1 className="font-headline text-xl font-bold text-primary">Antrean Pasien — dr. Danang Wicaksono, Sp.PD</h1>
-            <p className="text-sm text-[#44474f]">Hanya pasien dengan dokter terpilih. Tanpa aksi ke Data Pasien.</p>
+            <h1 className="font-headline text-xl font-bold text-primary">Antrean Pasien — {user?.username || 'Dokter'}</h1>
+            <p className="text-sm text-[#44474f]">Daftar pasien yang dialokasikan ke dokter ini hari ini.</p>
           </div>
 
           <section className="bg-white rounded-xl border border-[#c4c6d0]/40 shadow-sm overflow-hidden">
@@ -69,30 +95,57 @@ export default function DoctorQueuePage() {
                     <th className="py-3 px-5">No. Antrean</th>
                     <th className="py-3 px-5">Waktu Check-In</th>
                     <th className="py-3 px-5">Nama Pasien & NIK</th>
-                    <th className="py-3 px-5">Poli Tujuan & Dokter</th>
+                    <th className="py-3 px-5">Poli Tujuan</th>
+                    <th className="py-3 px-5">Pembayaran</th>
                     <th className="py-3 px-5">Status</th>
+                    <th className="py-3 px-5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#c4c6d0]/20 text-[#0b1c30]">
-                  {queueData.map(q => (
-                    <tr key={q.no} className="hover:bg-[#eff4ff]/40">
-                      <td className="py-3.5 px-5"><span className="text-sm font-bold text-primary bg-[#eff4ff] px-2.5 py-1 rounded-lg border border-[#c4c6d0]/40">{q.no}</span></td>
-                      <td className="py-3.5 px-5 text-xs font-mono text-[#44474f]">{q.time}</td>
+                  {isLoading ? (
+                    <tr><td colSpan={7} className="py-10 text-center text-sm text-[#44474f]">Memuat antrean...</td></tr>
+                  ) : queue.length === 0 ? (
+                    <tr><td colSpan={7} className="py-10 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="material-symbols-outlined text-3xl text-[#c4c6d0]">inbox</span>
+                        <span className="text-sm font-semibold text-[#44474f]">Belum ada antrean untuk dokter ini hari ini</span>
+                      </div>
+                    </td></tr>
+                  ) : queue.map(q => (
+                    <tr key={q.id} className="hover:bg-[#eff4ff]/40">
+                      <td className="py-3.5 px-5"><span className="text-sm font-bold text-primary bg-[#eff4ff] px-2.5 py-1 rounded-lg border border-[#c4c6d0]/40">{q.queueNumber}</span></td>
+                      <td className="py-3.5 px-5 text-xs font-mono text-[#44474f]">{formatTime(q.visitDate || q.createdAt)}</td>
                       <td className="py-3.5 px-5">
-                        <div className="flex flex-col"><span className="font-semibold text-primary">{q.name}</span><span className="text-xs text-[#747780]">NIK: {q.nik}</span></div>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-primary">{q.patient?.name || '-'}</span>
+                          <span className="text-xs text-[#747780]">NIK: {q.patient?.nik || '-'} • {q.patient?.mrn || '-'}</span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-5">
-                        <div className="flex flex-col"><span className="font-medium">{q.poli}</span><span className="text-xs text-[#747780]">{q.doctor}</span></div>
+                        <span className="text-sm font-medium">{q.poli?.name || '-'}</span>
+                      </td>
+                      <td className="py-3.5 px-5">
+                        <span className="text-xs font-semibold">{q.paymentType}</span>
                       </td>
                       <td className="py-3.5 px-5"><span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadge(q.status)}`}>{q.status}</span></td>
+                      <td className="py-3.5 px-5 text-right">
+                        {(q.status === 'CheckIn' || q.status === 'Pemeriksaan') && (
+                          <button
+                            onClick={() => navigate(`/doctor?registrationId=${q.id}`)}
+                            className="px-2.5 py-1 rounded-lg bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56]"
+                          >
+                            Mulai Periksa
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <div className="p-4 bg-[#eff4ff]/30 border-t border-[#c4c6d0]/20 flex items-center justify-between text-xs text-[#44474f]">
-              <span>Menampilkan <b className="text-[#0b1c30]">{queueData.length}</b> antrean untuk dokter ini</span>
-              <span className="text-[#747780]">Filter by doctor_id</span>
+              <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> antrean untuk dokter ini</span>
+              <span className="text-[#747780]">Filter by doctor_id: {user?.id}</span>
             </div>
           </section>
         </main>

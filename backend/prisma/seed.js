@@ -46,7 +46,7 @@ async function main() {
       paymentType: 'BPJS',
       complaint: 'Demam naik turun sejak 3 hari',
       status: 'CheckIn',
-      queueNumber: 'A001',
+      queueNumber: 'A-0001',
     },
   })
 

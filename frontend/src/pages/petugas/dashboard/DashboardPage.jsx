@@ -1,33 +1,77 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { broadcastQueueUpdate } from '../../../services/queueSync'
+import { getRegistrations, updateRegistrationStatus, callNextQueue } from '../../../services/registration'
+import api from '../../../services/api'
 import Navbar from '../../../components/layout/Navbar'
 import PatientRegistrationModal from '../registration/PatientRegistrationModal'
 import './DashboardPage.css'
 
-const paymentOptions = ['BPJS', 'UMUM', 'ASURANSI']
-const statusOptions = ['Menunggu', 'CheckIn', 'Pemeriksaan', 'Selesai']
-
-const initialQueue = [
-  { ticket: 'A-012', name: 'Hendra Gunawan', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono', time: '09:58 WIB', paymentType: 'BPJS', status: 'CheckIn' },
-  { ticket: 'A-013', name: 'Siti Nurhaliza', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono', time: '10:02 WIB', paymentType: 'UMUM', status: 'Menunggu' },
-  { ticket: 'B-008', name: 'Bambang Triyono', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono', time: '10:07 WIB', paymentType: 'ASURANSI', status: 'Menunggu' },
-  { ticket: 'A-016', name: 'Ratna Dewi Sulistyo', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono', time: '10:11 WIB', paymentType: 'BPJS', status: 'Pemeriksaan' },
-  { ticket: 'A-014', name: 'Fauzan Kamil', poli: 'Poli Umum', doctor: 'dr. Danang Wicaksono', time: '09:44 WIB', paymentType: 'BPJS', status: 'Selesai' },
-]
-
-const metrics = [
-  { label: 'Pasien Terdaftar Hari Ini', value: '48', sub: '36 BPJS • 12 Umum', icon: 'groups', bg: 'bg-[#b3ebff]/30 text-[#00677d]' },
-  { label: 'Total Tiket Antrean', value: '38', sub: '30 Selesai Terlayani', icon: 'confirmation_number', bg: 'bg-[#d7e2ff] text-[#001637]' },
-  { label: 'Pasien Sedang Menunggu', value: '8', sub: 'Di Ruang Tunggu Admisi', icon: 'hourglass_top', bg: 'bg-[#50d9fe]/20 text-[#005c70]' },
-  { label: 'Waktu Tunggu Rata-rata', value: '4.2 Mnt', sub: 'Target < 5.0 Mnt', icon: 'speed', bg: 'bg-[#6ffbbe]/30 text-[#005236]' },
-]
+function formatTime(dateStr) {
+  try { return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' } catch { return '-' }
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const [queue, setQueue] = useState(initialQueue)
+  const qc = useQueryClient()
   const [showModal, setShowModal] = useState(false)
-  const [patients, setPatients] = useState([])
+
+  const { data: queueData, isLoading: queueLoading } = useQuery({
+    queryKey: ['registrations'],
+    queryFn: async () => {
+      const res = await getRegistrations()
+      return res.data || res
+    },
+  })
+
+  const { data: statsData } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const { data } = await api.get('/dashboard')
+      return data.data || data
+    },
+  })
+
+  const regs = Array.isArray(queueData) ? queueData : queueData?.data || []
+  const queue = regs.map(r => ({
+    id: r.id,
+    ticket: r.queueNumber,
+    name: r.patient?.name || '-',
+    mrn: r.patient?.mrn || '-',
+    nik: r.patient?.nik || '-',
+    poli: r.poli?.name || '-',
+    doctor: r.doctor?.username ? `dr. ${r.doctor.username}` : '-',
+    time: formatTime(r.visitDate || r.createdAt),
+    paymentType: r.paymentType,
+    status: r.status,
+  }))
+
+  const stats = statsData ? [
+    { label: 'Pasien Terdaftar Hari Ini', value: String(statsData.patients ?? regs.length), sub: `${regs.filter(x=>x.paymentType==='BPJS').length} BPJS • ${regs.filter(x=>x.paymentType!=='BPJS').length} Umum`, icon: 'groups', bg: 'bg-[#b3ebff]/30 text-[#00677d]' },
+    { label: 'Total Tiket Antrean', value: String(statsData.registrations ?? regs.length), sub: `${regs.filter(x=>x.status==='Selesai').length} Selesai Terlayani`, icon: 'confirmation_number', bg: 'bg-[#d7e2ff] text-[#001637]' },
+    { label: 'Pasien Sedang Menunggu', value: String(statsData.menunggu ?? regs.filter(x=>x.status==='Menunggu').length), sub: 'Di Ruang Tunggu Admisi', icon: 'hourglass_top', bg: 'bg-[#50d9fe]/20 text-[#005c70]' },
+    { label: 'Waktu Tunggu Rata-rata', value: '4.2 Mnt', sub: 'Target < 5.0 Mnt', icon: 'speed', bg: 'bg-[#6ffbbe]/30 text-[#005236]' },
+  ] : [
+    { label: 'Pasien Terdaftar Hari Ini', value: String(regs.length), sub: '-', icon: 'groups', bg: 'bg-[#b3ebff]/30 text-[#00677d]' },
+    { label: 'Total Tiket Antrean', value: String(regs.length), sub: '-', icon: 'confirmation_number', bg: 'bg-[#d7e2ff] text-[#001637]' },
+    { label: 'Pasien Sedang Menunggu', value: String(regs.filter(x=>x.status==='Menunggu').length), sub: 'Di Ruang Tunggu Admisi', icon: 'hourglass_top', bg: 'bg-[#50d9fe]/20 text-[#005c70]' },
+    { label: 'Waktu Tunggu Rata-rata', value: '4.2 Mnt', sub: 'Target < 5.0 Mnt', icon: 'speed', bg: 'bg-[#6ffbbe]/30 text-[#005236]' },
+  ]
+
+  const statusMut = useMutation({
+    mutationFn: ({ id, status }) => updateRegistrationStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registrations'] }),
+  })
+
+  const callNextMut = useMutation({
+    mutationFn: () => callNextQueue(),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['registrations'] })
+      const r = res.data || res
+      if (r?.queueNumber) broadcastQueueUpdate({ type: 'CALL_NEXT', ticket: r.queueNumber, name: r.patient?.name || '' })
+    },
+  })
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -35,26 +79,43 @@ export default function DashboardPage() {
     navigate('/login', { replace: true })
   }
 
-  const handleAddPatient = (data) => {
-    const nextNum = patients.length + queue.length + 1
-    const newMrn = `A${String(nextNum).padStart(3, '0')}`
-    const pasienName = data.pasien || data.name
-    const newPatient = { id: Date.now(), mrn: newMrn, name: pasienName, ...data }
-    setPatients(prev => [...prev, newPatient])
-    const ticket = `A${String(nextNum).padStart(3, '0')}`
-    const timeStr = data.tanggalKunjungan ? new Date(data.tanggalKunjungan).toLocaleDateString('id-ID') + ' WIB' : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
-    const newQueueEntry = { ticket, name: pasienName, poli: data.poli || 'Poli Umum', doctor: data.dokter || data.doctor || 'dr. Danang Wicaksono', time: timeStr, paymentType: data.jenisPembayaran || data.paymentType || 'UMUM', status: 'Menunggu', keluhanAwal: data.keluhanAwal || '' }
-    setQueue(prev => [...prev, newQueueEntry])
-    return Promise.resolve()
-  }
+  const handleAddPatient = async (data) => {
+    try {
+      // 1. Create/Check Patient
+      let patient
+      const searchRes = await api.get('/patients', { params: { q: data.nik || data.name } })
+      const searchResults = Array.isArray(searchRes.data) ? searchRes.data : (searchRes.data?.data?.data || searchRes.data?.data || [])
+      const existing = searchResults.find(p => p.nik === data.nik)
 
-  const handleCallNext = () => {
-    if (queue.length <= 1) return
-    const [current, ...rest] = queue
-    const next = rest[0]
-    const updated = [{ ...next, status: 'CheckIn' }, ...rest.slice(1)]
-    setQueue(updated)
-    broadcastQueueUpdate({ type: 'CALL_NEXT', ticket: next.ticket, name: next.name })
+      if (existing) {
+        patient = existing
+      } else {
+        const pRes = await api.post('/patients', {
+          name: data.name,
+          nik: data.nik,
+          gender: data.gender || 'L',
+          birthDate: data.birthDate || '1990-01-01',
+          phone: data.phone || '',
+          address: data.address || '-'
+        })
+        patient = pRes.data?.data || pRes.data
+      }
+
+      // 2. Create Registration with doctorId and poliId from modal selection
+      await api.post('/registrations', {
+        patientId: patient.id,
+        doctorId: data.doctorId,   // real doctor ID from modal dropdown
+        poliId: data.poliId,       // real poli ID from modal dropdown
+        paymentType: data.paymentType,
+        complaint: data.keluhanAwal
+      })
+
+      qc.invalidateQueries({ queryKey: ['registrations'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    } catch (e) {
+      console.error(e)
+      throw e
+    }
   }
 
   function paymentBadge(type) {
@@ -80,9 +141,9 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 text-xs font-semibold text-[#00677d] uppercase tracking-wider mb-1">
               <span>Sistem Admisi Rawat Jalan</span>
               <span className="w-1 h-1 rounded-full bg-[#00677d]" />
-              <span>Kamis, 23 Oktober 2025</span>
+              <span>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
-            <h1 className="text-2xl font-headline font-bold text-[#001637]">Selamat Bertugas, Anita Rahmawati</h1>
+            <h1 className="text-2xl font-headline font-bold text-[#001637]">Selamat Bertugas, Petugas</h1>
             <p className="text-sm text-[#44474f] mt-0.5">Kelola antrean check-in pasien dan admisi loket secara real-time.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -96,7 +157,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="dashboard-metrics">
-          {metrics.map(m => (
+          {stats.map(m => (
             <div key={m.label} className="dashboard-metric-card">
               <div>
                 <span className="text-xs font-medium text-[#44474f]">{m.label}</span>
@@ -113,10 +174,10 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl border border-[#c4c6d0]/30 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-[#c4c6d0]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-[#001637]">Antrean Terkini Loket Poli Umum</h3>
-              <p className="text-xs text-[#44474f] mt-0.5">Daftar antrean admisi dan verifikasi berkas pasien Poli Umum & Layanan Terpadu.</p>
+              <h3 className="text-base font-bold text-[#001637]">Antrean Terkini</h3>
+              <p className="text-xs text-[#44474f] mt-0.5">Daftar antrean admisi dari database MySQL — kode format A-0001.</p>
             </div>
-            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56] shadow-sm">
+            <button onClick={() => callNextMut.mutate()} disabled={callNextMut.isPending} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56] shadow-sm disabled:opacity-50">
               <span className="material-symbols-outlined text-base">volume_up</span> Panggil Nomor Berikutnya
             </button>
           </div>
@@ -134,8 +195,12 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#c4c6d0]/20 text-[#0b1c30]">
-                {queue.map((p, i) => (
-                  <tr key={p.ticket} className={i === 0 ? 'bg-[#b3ebff]/10' : 'hover:bg-[#eff4ff]/40 transition-colors'}>
+                {queueLoading ? (
+                  <tr><td colSpan={7} className="py-10 text-center text-sm text-[#44474f]">Memuat antrean...</td></tr>
+                ) : queue.length === 0 ? (
+                  <tr><td colSpan={7} className="py-10 text-center"><div className="flex flex-col items-center gap-2"><span className="material-symbols-outlined text-3xl text-[#c4c6d0]">inbox</span><span className="text-sm font-semibold text-[#44474f]">Belum ada antrean hari ini</span><span className="text-xs text-[#747780]">Tambah pasien untuk generate kode A-0001 otomatis.</span></div></td></tr>
+                ) : queue.map((p, i) => (
+                  <tr key={p.id} className={i === 0 ? 'bg-[#b3ebff]/10' : 'hover:bg-[#eff4ff]/40 transition-colors'}>
                     <td className="py-3.5 px-5">
                       <span className={`text-sm font-bold ${i === 0 ? 'text-[#001637]' : 'text-[#44474f]'} bg-white px-2.5 py-1 rounded-lg border ${i === 0 ? 'border-[#c4c6d0]/40' : ''}`}>{p.ticket}</span>
                     </td>
@@ -143,7 +208,7 @@ export default function DashboardPage() {
                     <td className="py-3.5 px-5">
                       <div className="flex flex-col">
                         <span className={`font-semibold ${i === 0 ? 'text-[#001637]' : ''}`}>{p.name}</span>
-                        <span className="text-xs text-[#747780]">RM: #MV-{p.ticket.split('-')[1]} • NIK: 3174092408890001</span>
+                        <span className="text-xs text-[#747780]">RM: {p.mrn} • NIK: {p.nik}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-5">
@@ -162,11 +227,11 @@ export default function DashboardPage() {
                     </td>
                     <td className="py-3.5 px-5 text-right">
                       {p.status === 'CheckIn' ? (
-                        <button onClick={() => setQueue(q => q.map(x => x.ticket === p.ticket ? { ...x, status: 'Pemeriksaan' } : x))} className="px-2.5 py-1 rounded-lg bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56] shadow-sm">Mulai Periksa</button>
+                        <button onClick={() => statusMut.mutate({ id: p.id, status: 'Pemeriksaan' })} className="px-2.5 py-1 rounded-lg bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56] shadow-sm">Mulai Periksa</button>
                       ) : p.status === 'Pemeriksaan' ? (
-                        <button onClick={() => setQueue(q => q.map(x => x.ticket === p.ticket ? { ...x, status: 'Selesai' } : x))} className="px-2.5 py-1 rounded-lg bg-[#6ffbbe]/30 text-[#005236] text-xs font-semibold hover:bg-[#4edea3]/30">Selesai</button>
+                        <button onClick={() => statusMut.mutate({ id: p.id, status: 'Selesai' })} className="px-2.5 py-1 rounded-lg bg-[#6ffbbe]/30 text-[#005236] text-xs font-semibold hover:bg-[#4edea3]/30">Selesai</button>
                       ) : p.status === 'Menunggu' ? (
-                        <button onClick={() => setQueue(q => q.map(x => x.ticket === p.ticket ? { ...x, status: 'CheckIn' } : x))} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#dce9ff] hover:bg-[#d3e4fe] text-[#001637] text-xs font-semibold"><span className="material-symbols-outlined text-base">campaign</span>Check In</button>
+                        <button onClick={() => statusMut.mutate({ id: p.id, status: 'CheckIn' })} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#dce9ff] hover:bg-[#d3e4fe] text-[#001637] text-xs font-semibold"><span className="material-symbols-outlined text-base">campaign</span>Check In</button>
                       ) : (
                         <span className="text-xs text-[#44474f]">Selesai</span>
                       )}
@@ -176,22 +241,14 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-          <div className="overflow-x-auto">
-            <div className="flex justify-center py-3">
-            </div>
-          </div>
           <div className="p-4 bg-[#eff4ff]/30 border-t border-[#c4c6d0]/20 flex flex-col sm:flex-row items-center justify-between text-xs text-[#44474f] gap-3">
-            <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> dari <b className="text-[#0b1c30]">38</b> pendaftaran hari ini</span>
-            <div className="flex items-center gap-1">
-              <span className="px-3 py-1.5 rounded-lg bg-[#001637] text-white font-bold">1</span>
-              <button className="px-2.5 py-1.5 rounded-lg border border-[#c4c6d0]/30 hover:bg-[#dce9ff]">2</button>
-              <button className="px-2.5 py-1.5 rounded-lg border border-[#c4c6d0]/30 hover:bg-[#dce9ff]">Berikutnya</button>
-            </div>
+            <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> pendaftaran hari ini • Kode antrean DB: A-0001</span>
+            <span className="text-[#747780]">Sinkron MySQL • auto-generate per poli per hari</span>
           </div>
         </div>
       </div>
     </div>
-      <PatientRegistrationModal isOpen={showModal} onClose={() => setShowModal(false)} onSubmit={handleAddPatient} patientCount={patients.length} />
+      <PatientRegistrationModal isOpen={showModal} onClose={() => setShowModal(false)} onSubmit={handleAddPatient} />
     </>
   )
 }

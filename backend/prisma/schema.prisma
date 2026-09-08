@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -79,13 +79,14 @@ model MedicalRecord {
   patient        Patient           @relation(fields: [patientId], references: [id])
   doctorId       Int
   doctor         User              @relation(fields: [doctorId], references: [id])
-   subjective     String
-  bp             String
-  temp           Float
-  weight         Float
-  height         Float
+  subjective     String            @db.Text
+  objective      String?           @db.Text
+  bp             String?
+  temp           Float?
+  weight         Float?
+  height         Float?
   diagnosis      String
-  therapy        String
+  therapy        String?           @db.Text
   actions        MedicalAction[]
   prescription   Prescription?
   createdAt      DateTime          @default(now())

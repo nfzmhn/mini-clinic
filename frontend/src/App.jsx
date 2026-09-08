@@ -5,6 +5,9 @@ import RegisterPage from './pages/auth/RegisterPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import PatientsPage from './pages/patients/PatientsPage'
 import QueueBoardPage from './pages/queue/QueueBoardPage'
+import DoctorExaminationPage from './pages/doctor/soap/DoctorExaminationPage'
+import DoctorQueuePage from './pages/doctor/queue/DoctorQueuePage'
+import MedicalRecordsPage from './pages/doctor/records/MedicalRecordsPage'
 import Layout from './components/layout/Layout'
 
 const queryClient = new QueryClient()
@@ -19,6 +22,9 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/patients" element={<Layout><PatientsPage /></Layout>} />
           <Route path="/queue" element={<QueueBoardPage />} />
+          <Route path="/doctor" element={<DoctorExaminationPage />} />
+          <Route path="/doctor/queue" element={<DoctorQueuePage />} />
+          <Route path="/records" element={<MedicalRecordsPage />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

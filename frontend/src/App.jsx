@@ -8,6 +8,10 @@ import QueueBoardPage from './pages/petugas/queue-board/QueueBoardPage'
 import DoctorExaminationPage from './pages/doctor/soap/DoctorExaminationPage'
 import DoctorQueuePage from './pages/doctor/queue/DoctorQueuePage'
 import MedicalRecordsPage from './pages/doctor/records/MedicalRecordsPage'
+import AdminDashboardPage from './pages/admin/dashboard/AdminDashboardPage'
+import MasterPatientsPage from './pages/admin/patients/MasterPatientsPage'
+import MasterPolisPage from './pages/admin/polis/MasterPolisPage'
+import UsersPage from './pages/admin/users/UsersPage'
 import Layout from './components/layout/Layout'
 
 const queryClient = new QueryClient()
@@ -25,6 +29,11 @@ function App() {
           <Route path="/doctor" element={<DoctorExaminationPage />} />
           <Route path="/doctor/queue" element={<DoctorQueuePage />} />
           <Route path="/records" element={<MedicalRecordsPage />} />
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/patients" element={<MasterPatientsPage />} />
+          <Route path="/admin/polis" element={<MasterPolisPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

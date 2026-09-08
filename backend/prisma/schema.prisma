@@ -3,39 +3,15 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum Role {
-  ADMIN
-  DOCTOR
-  REGISTRATION_OFFICER
-}
-
-enum Gender {
-  L
-  P
-}
-
-enum RegistrationStatus {
-  Menunggu
-  CheckIn
-  Pemeriksaan
-  Selesai
-}
-
-enum PaymentType {
-  BPJS
-  UMUM
-  ASURANSI
 }
 
 model User {
   id            Int            @id @default(autoincrement())
   username      String         @unique
   passwordHash  String
-  role          Role
+  role          String
   poliId        Int?
   poli          Poli?          @relation(fields: [poliId], references: [id])
   registrations Registration[] @relation("DoctorRegistrations")
@@ -60,13 +36,13 @@ model Poli {
 
 model Patient {
   id             Int             @id @default(autoincrement())
-  mrn            String          @unique // RM-0001
+  mrn            String          @unique
   nik            String          @unique
   name           String
-  gender         Gender
+  gender         String
   birthDate      DateTime
   phone          String
-  address        String          @db.Text
+  address        String
   registrations  Registration[]
   medicalRecords MedicalRecord[]
   createdAt      DateTime        @default(now())
@@ -84,10 +60,10 @@ model Registration {
   poliId         Int
   poli           Poli               @relation(fields: [poliId], references: [id])
   visitDate      DateTime           @default(now())
-  paymentType    PaymentType
-  complaint      String             @db.Text
-  status         RegistrationStatus @default(Menunggu)
-  queueNumber    String             // A001
+  paymentType    String
+  complaint      String
+  status         String             @default("Menunggu")
+  queueNumber    String
   medicalRecord  MedicalRecord?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -103,13 +79,13 @@ model MedicalRecord {
   patient        Patient           @relation(fields: [patientId], references: [id])
   doctorId       Int
   doctor         User              @relation(fields: [doctorId], references: [id])
-  subjective     String            @db.Text
-  bp             String            // Blood Pressure
+   subjective     String
+  bp             String
   temp           Float
   weight         Float
   height         Float
-  diagnosis      String            @db.Text
-  therapy        String            @db.Text
+  diagnosis      String
+  therapy        String
   actions        MedicalAction[]
   prescription   Prescription?
   createdAt      DateTime          @default(now())
@@ -123,7 +99,7 @@ model MedicalAction {
   medicalRecordId Int
   medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id])
   name            String
-  cost            Decimal       @db.Decimal(10, 2)
+  cost            Decimal
   createdAt       DateTime      @default(now())
 
   @@map("medical_actions")
@@ -133,7 +109,7 @@ model Prescription {
   id              Int                @id @default(autoincrement())
   medicalRecordId Int                @unique
   medicalRecord   MedicalRecord      @relation(fields: [medicalRecordId], references: [id])
-  notes           String?            @db.Text
+  notes           String?
   items           PrescriptionItem[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

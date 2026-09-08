@@ -1,0 +1,15 @@
+{
+  "info": { "name": "Mini Clinic API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "item": [
+    { "name": "Auth - Login", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" }, "url": "{{baseUrl}}/api/auth/login" } },
+    { "name": "Patients - List", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/patients?q=&page=1" } },
+    { "name": "Patients - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"nik\":\"3271021405900003\",\"name\":\"Budi\",\"gender\":\"L\",\"birthDate\":\"1990-05-14\",\"phone\":\"0812...\",\"address\":\"Bandung\"}" }, "url": "{{baseUrl}}/api/patients" } },
+    { "name": "Polis - List", "request": { "method": "GET", "url": "{{baseUrl}}/api/polis" } },
+    { "name": "Registrations - List", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/registrations" } },
+    { "name": "Registrations - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"patientId\":1,\"doctorId\":2,\"poliId\":1,\"paymentType\":\"BPJS\",\"complaint\":\"Demam\"}" }, "url": "{{baseUrl}}/api/registrations" } },
+    { "name": "Medical Records - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"registrationId\":1,\"patientId\":1,\"doctorId\":2,\"subjective\":\"Demam\",\"bp\":\"120/80\",\"temp\":36.6,\"weight\":68,\"height\":172,\"diagnosis\":\"A90\",\"therapy\":\"Paracetamol\",\"actions\":[{\"name\":\"Pemeriksaan\",\"cost\":10000}],\"prescription\":{\"notes\":\"Setelah makan\",\"items\":[{\"medicine\":\"Paracetamol\",\"dosage\":\"3x1\",\"qty\":10,\"instruction\":\"Sesudah makan\"}]}}" }, "url": "{{baseUrl}}/api/medical-records" } },
+    { "name": "Medical Records - By Patient", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/medical-records/patient/1" } },
+    { "name": "Dashboard - Stats", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/dashboard" } }
+  ],
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:5000" }, { "key": "token", "value": "" }]
+}

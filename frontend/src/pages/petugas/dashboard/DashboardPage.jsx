@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { broadcastQueueUpdate } from '../../services/queueSync'
-import Navbar from '../../components/layout/Navbar'
-import PatientRegistrationModal from '../../components/forms/PatientRegistrationModal'
+import { broadcastQueueUpdate } from '../../../services/queueSync'
+import Navbar from '../../../components/layout/Navbar'
+import PatientRegistrationModal from '../registration/PatientRegistrationModal'
 import './DashboardPage.css'
 
 const paymentOptions = ['BPJS', 'UMUM', 'ASURANSI']

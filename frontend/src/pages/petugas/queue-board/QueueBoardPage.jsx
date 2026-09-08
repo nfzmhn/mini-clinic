@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { subscribeQueueUpdate } from '../../services/queueSync'
+import { subscribeQueueUpdate } from '../../../services/queueSync'
 import './QueueBoardPage.css'
 
 const queues = [

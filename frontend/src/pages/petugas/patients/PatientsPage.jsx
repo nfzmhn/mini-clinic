@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { z } from 'zod'
-import PatientRegistrationModal from '../../components/forms/PatientRegistrationModal'
+import PatientRegistrationModal from '../registration/PatientRegistrationModal'
 import './PatientsPage.css'
 
 const schema = z.object({

@@ -8,6 +8,8 @@ import poliRoute from './routes/poliRoute.js'
 import registrationRoute from './routes/registrationRoute.js'
 import medicalRecordRoute from './routes/medicalRecordRoute.js'
 import userRoute from './routes/userRoute.js'
+import queueRoute from './routes/queueRoute.js'
+import prescriptionRoute from './routes/prescriptionRoute.js'
 import { stats } from './controllers/dashboardController.js'
 import { authenticate } from './middleware/auth.js'
 import { failure } from './utils/response.js'
@@ -23,7 +25,9 @@ app.use('/api/auth', authRoute)
 app.use('/api/patients', patientRoute)
 app.use('/api/polis', poliRoute)
 app.use('/api/registrations', registrationRoute)
+app.use('/api/queues', queueRoute)           // Queue endpoints (spec-compliant)
 app.use('/api/medical-records', medicalRecordRoute)
+app.use('/api/prescriptions', prescriptionRoute)  // Prescription endpoints
 app.use('/api/users', userRoute)
 app.get('/api/dashboard', authenticate, stats)
 

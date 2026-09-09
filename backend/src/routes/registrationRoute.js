@@ -7,6 +7,7 @@ r.use(authenticate)
 r.get('/', c.list)
 r.get('/:id', c.getOne)
 r.post('/', c.create)
-r.put('/:id/status', c.updateStatus)
+r.put('/:id', c.update)           // PUT /registrations/:id  (general update)
+r.put('/:id/status', c.updateStatus) // PUT /registrations/:id/status
 r.post('/call-next', c.callNext)
 export default r

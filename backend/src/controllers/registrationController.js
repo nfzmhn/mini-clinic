@@ -17,9 +17,10 @@ export const list = async (req, res) => {
   if (poliId) where.poliId = Number(poliId)
   if (doctorId) where.doctorId = Number(doctorId)
   if (date) {
-    const d = new Date(date)
-    const next = new Date(d); next.setDate(next.getDate() + 1)
-    where.visitDate = { gte: d, lt: next }
+    // Parse tanggal sebagai WIB (UTC+7) agar cocok dengan data tersimpan
+    const d    = new Date(date + 'T00:00:00+07:00')
+    const next = new Date(date + 'T23:59:59+07:00')
+    where.visitDate = { gte: d, lte: next }
   }
   const data = await prisma.registration.findMany({ where, include: { patient: true, doctor: true, poli: true }, orderBy: { createdAt: 'desc' } })
   return success(res, data)
@@ -53,6 +54,21 @@ export const updateStatus = async (req, res) => {
   const { status } = req.body
   const reg = await prisma.registration.update({ where: { id: Number(req.params.id) }, data: { status } }).catch(() => null)
   if (!reg) return failure(res, 'Not found', 404)
+  return success(res, reg)
+}
+
+export const update = async (req, res) => {
+  const id = Number(req.params.id)
+  if (isNaN(id)) return failure(res, 'ID tidak valid', 400)
+  const updateSchema = schema.partial()
+  const parsed = updateSchema.safeParse(req.body)
+  if (!parsed.success) return failure(res, 'Validation failed', 400, parsed.error.errors)
+  const reg = await prisma.registration.update({
+    where: { id },
+    data: parsed.data,
+    include: { patient: true, doctor: { select: { id: true, username: true } }, poli: true },
+  }).catch(() => null)
+  if (!reg) return failure(res, 'Registration tidak ditemukan', 404)
   return success(res, reg)
 }
 

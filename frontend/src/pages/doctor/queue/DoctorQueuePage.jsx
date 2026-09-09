@@ -23,16 +23,28 @@ export default function DoctorQueuePage() {
   const navigate = useNavigate()
   const user = getUser()
 
+  // Format tanggal lokal (bukan UTC) agar filter hari ini akurat
+  const today = (() => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  })()
+
   const { data: regData, isLoading } = useQuery({
     queryKey: ['doctor-queue', user?.id],
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10)
       const res = await getRegistrations({ doctorId: user?.id, date: today })
       return Array.isArray(res) ? res : (res?.data?.data || res?.data || [])
     },
+    refetchInterval: 8000,          // auto-refresh tiap 8 detik
+    refetchOnWindowFocus: true,     // refresh saat tab aktif kembali
   })
 
-  const queue = Array.isArray(regData) ? regData : []
+  // Tampilkan semua kecuali Selesai (Menunggu + CheckIn + Pemeriksaan)
+  const allQueue = Array.isArray(regData) ? regData : []
+  const queue = allQueue.filter(q => q.status !== 'Selesai')
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -83,8 +95,14 @@ export default function DoctorQueuePage() {
 
         <main className="doctor-content">
           <div className="flex flex-col gap-1">
-            <h1 className="font-headline text-xl font-bold text-primary">Antrean Pasien — {user?.username || 'Dokter'}</h1>
-            <p className="text-sm text-[#44474f]">Daftar pasien yang dialokasikan ke dokter ini hari ini.</p>
+            <div className="flex items-center gap-3">
+              <h1 className="font-headline text-xl font-bold text-primary">Antrean Pasien — {user?.username || 'Dokter'}</h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#6ffbbe]/20 border border-[#00a874]/20 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-[#00a874] animate-pulse" />
+                <span className="text-xs font-semibold text-[#005236]">Live · refresh tiap 8 detik</span>
+              </span>
+            </div>
+            <p className="text-sm text-[#44474f]">Pasien yang dialokasikan ke dokter ini hari ini. Halaman otomatis diperbarui.</p>
           </div>
 
           <section className="bg-white rounded-xl border border-[#c4c6d0]/40 shadow-sm overflow-hidden">
@@ -144,8 +162,8 @@ export default function DoctorQueuePage() {
               </table>
             </div>
             <div className="p-4 bg-[#eff4ff]/30 border-t border-[#c4c6d0]/20 flex items-center justify-between text-xs text-[#44474f]">
-              <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> antrean untuk dokter ini</span>
-              <span className="text-[#747780]">Filter by doctor_id: {user?.id}</span>
+              <span>Antrean aktif: <b className="text-[#0b1c30]">{queue.length}</b> pasien • Total hari ini: <b className="text-[#0b1c30]">{allQueue.length}</b></span>
+              <span className="text-[#747780]">Filter: doctorId={user?.id} · tanggal={today}</span>
             </div>
           </section>
         </main>

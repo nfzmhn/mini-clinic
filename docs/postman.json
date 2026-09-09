@@ -1,15 +1,503 @@
 {
-  "info": { "name": "Mini Clinic API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
-  "item": [
-    { "name": "Auth - Login", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"username\":\"admin\",\"password\":\"admin123\"}" }, "url": "{{baseUrl}}/api/auth/login" } },
-    { "name": "Patients - List", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/patients?q=&page=1" } },
-    { "name": "Patients - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"nik\":\"3271021405900003\",\"name\":\"Budi\",\"gender\":\"L\",\"birthDate\":\"1990-05-14\",\"phone\":\"0812...\",\"address\":\"Bandung\"}" }, "url": "{{baseUrl}}/api/patients" } },
-    { "name": "Polis - List", "request": { "method": "GET", "url": "{{baseUrl}}/api/polis" } },
-    { "name": "Registrations - List", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/registrations" } },
-    { "name": "Registrations - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"patientId\":1,\"doctorId\":2,\"poliId\":1,\"paymentType\":\"BPJS\",\"complaint\":\"Demam\"}" }, "url": "{{baseUrl}}/api/registrations" } },
-    { "name": "Medical Records - Create", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"registrationId\":1,\"patientId\":1,\"doctorId\":2,\"subjective\":\"Demam\",\"bp\":\"120/80\",\"temp\":36.6,\"weight\":68,\"height\":172,\"diagnosis\":\"A90\",\"therapy\":\"Paracetamol\",\"actions\":[{\"name\":\"Pemeriksaan\",\"cost\":10000}],\"prescription\":{\"notes\":\"Setelah makan\",\"items\":[{\"medicine\":\"Paracetamol\",\"dosage\":\"3x1\",\"qty\":10,\"instruction\":\"Sesudah makan\"}]}}" }, "url": "{{baseUrl}}/api/medical-records" } },
-    { "name": "Medical Records - By Patient", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/medical-records/patient/1" } },
-    { "name": "Dashboard - Stats", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/api/dashboard" } }
+  "info": {
+    "_postman_id": "mini-clinic-api-v2",
+    "name": "Mini Clinic REST API",
+    "description": "Dokumentasi lengkap REST API Mini Clinic — mencakup seluruh endpoint minimal yang dipersyaratkan.\n\n**Base URL:** `http://localhost:5000/api`\n\n**Auth:** Bearer Token (JWT). Login untuk mendapatkan token, lalu gunakan sebagai `Authorization: Bearer <token>` di semua endpoint yang memerlukan autentikasi.\n\n**Roles:**\n- `ADMIN` — akses penuh\n- `DOCTOR` — akses modul pemeriksaan & rekam medis\n- `REGISTRATION_OFFICER` — akses pendaftaran & antrian",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string", "description": "JWT token — diisi otomatis setelah login" }
   ],
-  "variable": [{ "key": "baseUrl", "value": "http://localhost:5000" }, { "key": "token", "value": "" }]
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Endpoint autentikasi — login, logout, dan data user aktif.",
+      "item": [
+        {
+          "name": "POST /login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login ke sistem. Mengembalikan JWT token.\n\n**Role tersedia:**\n- `admin` / `admin123` → ADMIN\n- `dokter` / `dokter123` → DOCTOR\n- `petugas` / `petugas123` → REGISTRATION_OFFICER"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["const r = pm.response.json();", "if (r.data && r.data.token) {", "  pm.collectionVariables.set('token', r.data.token);", "  console.log('Token saved:', r.data.token.slice(0,30) + '...');", "}"],
+              "type": "text/javascript"
+            }
+          }]
+        },
+        {
+          "name": "POST /logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] },
+            "body": { "mode": "raw", "raw": "" },
+            "description": "Logout dari sistem. JWT bersifat stateless — server mengkonfirmasi 200. Client wajib menghapus token dari penyimpanan lokal."
+          }
+        },
+        {
+          "name": "GET /me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] },
+            "description": "Ambil data user yang sedang login."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient",
+      "description": "CRUD pasien. Setiap pasien mendapat No. Rekam Medis (MRN) otomatis format `RM-0001`.",
+      "item": [
+        {
+          "name": "GET /patients",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/patients?q=&page=1&limit=20",
+              "host": ["{{base_url}}"], "path": ["patients"],
+              "query": [
+                { "key": "q", "value": "", "description": "Cari berdasarkan nama, NIK, atau MRN" },
+                { "key": "page", "value": "1", "description": "Halaman (default: 1)" },
+                { "key": "limit", "value": "20", "description": "Jumlah per halaman (default: 20)" }
+              ]
+            },
+            "description": "Daftar semua pasien dengan paginasi dan pencarian."
+          }
+        },
+        {
+          "name": "GET /patients/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/patients/1", "host": ["{{base_url}}"], "path": ["patients", "1"] },
+            "description": "Detail satu pasien berdasarkan ID."
+          }
+        },
+        {
+          "name": "POST /patients",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/patients", "host": ["{{base_url}}"], "path": ["patients"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nik\": \"3271021405900099\",\n  \"name\": \"Siti Rahayu\",\n  \"gender\": \"P\",\n  \"birthDate\": \"1990-05-14\",\n  \"phone\": \"081234567890\",\n  \"address\": \"Jl. Contoh No. 1, Jakarta\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Daftarkan pasien baru. MRN (`RM-XXXX`) dibuat otomatis oleh sistem.\n\n**Validasi:**\n- `nik`: wajib, 16 digit\n- `name`: wajib, min 2 karakter\n- `gender`: `L` atau `P`\n- `birthDate`: format ISO `YYYY-MM-DD`\n- `phone`: min 8 karakter\n- `address`: min 3 karakter"
+          }
+        },
+        {
+          "name": "PUT /patients/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/patients/1", "host": ["{{base_url}}"], "path": ["patients", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"089876543210\",\n  \"address\": \"Jl. Baru No. 99, Bandung\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update data pasien (semua field opsional — partial update)."
+          }
+        },
+        {
+          "name": "DELETE /patients/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/patients/1", "host": ["{{base_url}}"], "path": ["patients", "1"] },
+            "description": "Hapus pasien beserta seluruh data terkait (registrasi, rekam medis, resep) secara cascade.\n\n⚠️ **Tidak dapat dibatalkan.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registration",
+      "description": "Pendaftaran kunjungan pasien. Setiap registrasi menghasilkan nomor antrian otomatis.",
+      "item": [
+        {
+          "name": "GET /registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/registrations?status=&poliId=&doctorId=&date=",
+              "host": ["{{base_url}}"], "path": ["registrations"],
+              "query": [
+                { "key": "status", "value": "", "description": "Filter: Menunggu | CheckIn | Pemeriksaan | Selesai" },
+                { "key": "poliId", "value": "", "description": "Filter by ID poli" },
+                { "key": "doctorId", "value": "", "description": "Filter by ID dokter" },
+                { "key": "date", "value": "", "description": "Filter tanggal YYYY-MM-DD" }
+              ]
+            },
+            "description": "Daftar semua registrasi dengan filter opsional."
+          }
+        },
+        {
+          "name": "GET /registrations/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/registrations/1", "host": ["{{base_url}}"], "path": ["registrations", "1"] },
+            "description": "Detail satu registrasi beserta data pasien, dokter, dan poli."
+          }
+        },
+        {
+          "name": "POST /registrations",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/registrations", "host": ["{{base_url}}"], "path": ["registrations"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": 1,\n  \"doctorId\": 5,\n  \"poliId\": 4,\n  \"paymentType\": \"BPJS\",\n  \"complaint\": \"Demam dan batuk sejak 3 hari\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Daftarkan kunjungan pasien. Nomor antrian (`A-0001`) dibuat otomatis.\n\n**paymentType:** `BPJS` | `UMUM` | `ASURANSI`\n\n**Status awal:** `Menunggu`"
+          }
+        },
+        {
+          "name": "PUT /registrations/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/registrations/1", "host": ["{{base_url}}"], "path": ["registrations", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"complaint\": \"Keluhan diperbarui: demam tinggi\",\n  \"paymentType\": \"UMUM\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update data registrasi (partial update). Semua field opsional."
+          }
+        },
+        {
+          "name": "PUT /registrations/:id/status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/registrations/1/status", "host": ["{{base_url}}"], "path": ["registrations", "1", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CheckIn\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update status registrasi.\n\n**Alur status:** `Menunggu` → `CheckIn` → `Pemeriksaan` → `Selesai`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Queue",
+      "description": "Manajemen antrian kunjungan. Endpoint berbasis registrasi dengan semantik khusus antrian.",
+      "item": [
+        {
+          "name": "GET /queues",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/queues?status=Menunggu&poliId=&doctorId=&date=",
+              "host": ["{{base_url}}"], "path": ["queues"],
+              "query": [
+                { "key": "status", "value": "Menunggu", "description": "Default: Menunggu & CheckIn. Bisa spesifik: Menunggu | CheckIn | Pemeriksaan | Selesai" },
+                { "key": "poliId", "value": "", "description": "Filter by ID poli" },
+                { "key": "doctorId", "value": "", "description": "Filter by ID dokter" },
+                { "key": "date", "value": "", "description": "Filter tanggal YYYY-MM-DD (default: semua)" }
+              ]
+            },
+            "description": "Ambil daftar antrian aktif. Default menampilkan status `Menunggu` dan `CheckIn` terurut dari yang paling awal."
+          }
+        },
+        {
+          "name": "POST /queues",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/queues", "host": ["{{base_url}}"], "path": ["queues"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": 1,\n  \"doctorId\": 5,\n  \"poliId\": 4,\n  \"paymentType\": \"UMUM\",\n  \"complaint\": \"Kontrol rutin\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Tambahkan pasien ke antrian (sama dengan POST /registrations). Nomor antrian dibuat otomatis."
+          }
+        },
+        {
+          "name": "PUT /queues/:id/call",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/queues/1/call", "host": ["{{base_url}}"], "path": ["queues", "1", "call"] },
+            "body": { "mode": "raw", "raw": "" },
+            "description": "Panggil pasien dengan ID tertentu — ubah status menjadi `CheckIn`."
+          }
+        },
+        {
+          "name": "PUT /queues/:id/status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/queues/1/status", "host": ["{{base_url}}"], "path": ["queues", "1", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Pemeriksaan\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update status antrian secara manual.\n\n**Nilai valid:** `Menunggu` | `CheckIn` | `Pemeriksaan` | `Selesai`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medical Record",
+      "description": "Rekam medis SOAP — dibuat saat dokter menyelesaikan pemeriksaan.",
+      "item": [
+        {
+          "name": "POST /medical-records",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/medical-records", "host": ["{{base_url}}"], "path": ["medical-records"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationId\": 1,\n  \"patientId\": 1,\n  \"doctorId\": 5,\n  \"subjective\": \"Pasien mengeluh demam tinggi sejak 3 hari, disertai nyeri kepala dan mual.\",\n  \"objective\": \"Pemeriksaan fisik: conjungtiva anemis, akral hangat\",\n  \"bp\": \"120/80\",\n  \"temp\": 38.5,\n  \"weight\": 65,\n  \"height\": 165,\n  \"diagnosis\": \"A90 • Dengue Fever\",\n  \"therapy\": \"Paracetamol 3x500mg, istirahat cukup, minum air putih 2L/hari\",\n  \"actions\": [\n    { \"name\": \"Pemeriksaan Darah Lengkap\", \"cost\": 0 }\n  ],\n  \"prescription\": {\n    \"notes\": \"Resep dokter\",\n    \"items\": [\n      {\n        \"medicine\": \"Paracetamol 500mg\",\n        \"dosage\": \"3x1\",\n        \"qty\": 15,\n        \"instruction\": \"Diminum setelah makan\"\n      }\n    ]\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Buat rekam medis SOAP baru. Otomatis mengubah status registrasi menjadi `Selesai`.\n\n**Role:** DOCTOR atau ADMIN\n\n**Field wajib:** `registrationId`, `patientId`, `doctorId`, `subjective`, `diagnosis`\n\n**Field opsional:** `objective`, `bp`, `temp`, `weight`, `height`, `therapy`, `actions[]`, `prescription`"
+          }
+        },
+        {
+          "name": "GET /medical-records/:patientId",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/medical-records/1", "host": ["{{base_url}}"], "path": ["medical-records", "1"] },
+            "description": "Ambil semua rekam medis pasien berdasarkan `patientId`. Terurut dari yang terbaru.\n\nMengembalikan data lengkap termasuk tindakan, resep, dan info registrasi (dokter, poli)."
+          }
+        },
+        {
+          "name": "GET /medical-records/registration/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/medical-records/registration/1", "host": ["{{base_url}}"], "path": ["medical-records", "registration", "1"] },
+            "description": "Ambil rekam medis berdasarkan `registrationId` (satu registrasi = satu rekam medis)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prescription",
+      "description": "Manajemen resep obat. Resep terikat ke rekam medis.",
+      "item": [
+        {
+          "name": "POST /prescriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/prescriptions", "host": ["{{base_url}}"], "path": ["prescriptions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicalRecordId\": 1,\n  \"notes\": \"Resep tambahan\",\n  \"items\": [\n    {\n      \"medicine\": \"Amoxicillin 500mg\",\n      \"dosage\": \"3x1\",\n      \"qty\": 21,\n      \"instruction\": \"Habiskan obat meskipun sudah merasa sembuh\"\n    },\n    {\n      \"medicine\": \"Antasida tablet\",\n      \"dosage\": \"3x1\",\n      \"qty\": 10,\n      \"instruction\": \"Diminum 30 menit sebelum makan\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Buat resep baru untuk rekam medis yang sudah ada.\n\n**Role:** DOCTOR atau ADMIN\n\n**Catatan:** Satu rekam medis hanya bisa memiliki satu resep. Jika sudah ada, akan dikembalikan error 409."
+          }
+        },
+        {
+          "name": "GET /prescriptions/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/prescriptions/1", "host": ["{{base_url}}"], "path": ["prescriptions", "1"] },
+            "description": "Detail resep berdasarkan `prescriptionId`, termasuk semua item obat dan info rekam medis."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Poli (Poliklinik)",
+      "description": "Master data poliklinik.",
+      "item": [
+        {
+          "name": "GET /polis",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/polis", "host": ["{{base_url}}"], "path": ["polis"] }
+          }
+        },
+        {
+          "name": "POST /polis",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/polis", "host": ["{{base_url}}"], "path": ["polis"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Poli Anak\",\n  \"code\": \"B\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Buat poli baru. **Role:** ADMIN"
+          }
+        },
+        {
+          "name": "PUT /polis/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/polis/1", "host": ["{{base_url}}"], "path": ["polis", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Poli Umum Dewasa\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update poli. **Role:** ADMIN"
+          }
+        },
+        {
+          "name": "DELETE /polis/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/polis/1", "host": ["{{base_url}}"], "path": ["polis", "1"] },
+            "description": "Hapus poli. **Role:** ADMIN"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (Admin Only)",
+      "description": "Manajemen pengguna sistem. Semua operasi write memerlukan role ADMIN.",
+      "item": [
+        {
+          "name": "GET /users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/users?role=",
+              "host": ["{{base_url}}"], "path": ["users"],
+              "query": [{ "key": "role", "value": "", "description": "Filter: ADMIN | DOCTOR | REGISTRATION_OFFICER" }]
+            },
+            "description": "Daftar semua user. Dapat difilter by role."
+          }
+        },
+        {
+          "name": "GET /users/:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"] }
+          }
+        },
+        {
+          "name": "POST /users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"dr.budi\",\n  \"password\": \"dokter123\",\n  \"role\": \"DOCTOR\",\n  \"poliId\": 4\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Buat user baru. **Role:** ADMIN\n\n**role:** `ADMIN` | `DOCTOR` | `REGISTRATION_OFFICER`\n\n`poliId` hanya relevan untuk DOCTOR."
+          }
+        },
+        {
+          "name": "PUT /users/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"dr.budi.updated\",\n  \"role\": \"DOCTOR\",\n  \"poliId\": 4\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update user. Password opsional (hanya update jika diisi). **Role:** ADMIN"
+          }
+        },
+        {
+          "name": "DELETE /users/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"] },
+            "description": "Hapus user. Tidak bisa menghapus diri sendiri. **Role:** ADMIN"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "GET /dashboard",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/dashboard", "host": ["{{base_url}}"], "path": ["dashboard"] },
+            "description": "Statistik ringkasan: total pasien, registrasi hari ini, antrian pending, jumlah poli."
+          }
+        }
+      ]
+    }
+  ]
 }

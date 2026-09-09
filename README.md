@@ -253,5 +253,3 @@ npm run lint
 ```
 
 ---
-
-**Lisensi:** Internal — PT Inova Medika

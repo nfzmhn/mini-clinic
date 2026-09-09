@@ -12,8 +12,8 @@ Sistem informasi manajemen klinik mini berbasis **Framework Express.js (backend)
 ## 1. Cara Instalasi Aplikasi
 
 ### Prasyarat
-- **Node.js ≥ 18** 
-- **MySQL ≥ 8.0** 
+- **Node.js** 
+- **MySQL** 
 - **Git**
 
 ### Langkah-langkah

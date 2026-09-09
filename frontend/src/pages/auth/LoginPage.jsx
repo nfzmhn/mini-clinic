@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [serverError, setServerError] = useState('')
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { username: 'admin', password: 'admin123', facility: 'bdg-central' },
+    defaultValues: { username: '', password: '', facility: 'bdg-central' },
   })
 
   const onSubmit = async (values) => {
@@ -47,23 +47,17 @@ export default function LoginPage() {
                 <div className="flex items-center gap-3">
                   <img alt="Medvita" className="h-11 w-auto bg-white p-1 rounded-lg shadow-sm" src="/logo.png" />
                 </div>
-              <div className="inline-flex items-center gap-2 bg-[#001637]/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-                <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4edea3] opacity-75" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4edea3]" /></span>
-                <span className="text-xs font-semibold tracking-wide text-[#6ffbbe]">Sistem Operasional Aktif</span>
-                <span className="text-[#7a93c4]/60 text-xs">•</span>
-                <span className="text-xs font-semibold text-[#7a93c4]">18ms Latensi</span>
-              </div>
               <div className="space-y-2 pt-1">
-                <span className="text-xs uppercase tracking-widest text-[#b3ebff] font-bold">Clinical OS Suite v4.8</span>
+                <span className="text-xs uppercase tracking-widest text-[#b3ebff] font-bold">Clinical Website</span>
                 <h1 className="font-headline text-2xl font-bold tracking-tight leading-snug">Sistem Informasi Rekam Medis &amp; Pelayanan Poliklinik Terpadu</h1>
                 <p className="text-sm text-[#dce9ff]/80 leading-relaxed">Platform operasional terstandardisasi klinis untuk akselerasi dokumentasi SOAP, triage rawat jalan, serta pemenuhan regulasi kesehatan nasional.</p>
               </div>
             </div>
             <div className="relative z-10 py-6 space-y-3">
               {[
-                ['verified_user', 'SATUSEHAT Kemenkes RI v2.4', 'FHIR HL7 API sinkronisasi langsung rekam medis nasional.', 'Tersertifikasi'],
-                ['lock', 'Enkripsi Rekam Medis End-to-End', 'Kepatuhan standar audit ISO/IEC 27001 & kerahasiaan pasien.'],
-                ['hub', 'Smart Queue Multi-Spesialisasi', 'Integrasi tele-antrean farmasi, laboratorium, dan kasir.'],
+                ['verified_user', 'SATUSEHAT Kemenkes RI', 'Sinkronisasi langsung rekam medis nasional.'],
+                ['lock', 'Enkripsi Rekam Medis End-to-End', 'Kepatuhan standar audit kerahasiaan pasien.'],
+                ['hub', 'Smart Queue Multi-Spesialisasi', 'Integrasi tele-antrean, dokter, dan kasir.'],
               ].map(([icon, title, desc, badge]) => (
                 <div key={title} className="flex items-start gap-3 p-3 bg-[#001637]/40 rounded-lg border border-white/10">
                   <div className="p-1.5 rounded bg-[#50d9fe]/20 text-[#b3ebff]"><span className="material-symbols-outlined text-[20px] leading-none">{icon}</span></div>
@@ -74,14 +68,13 @@ export default function LoginPage() {
                 </div>
               ))}
             </div>
-            <div className="relative z-10 flex items-center justify-between text-xs text-[#dce9ff]/60"><span>Kemenkes RI Reg. ID: 3273-SYS-2024</span><span>Build 894.21</span></div>
+            <div className="relative z-10 flex items-center justify-between text-xs text-[#dce9ff]/60"><span>Kemenkes RI</span></div>
           </div>
 
           <div className="lg:col-span-7 bg-white p-8 lg:p-10 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2">
                 <span className="text-xs uppercase tracking-wider text-[#00677d] font-bold">Portal Resmi Otorisasi</span>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#eff4ff] rounded-full"><span className="material-symbols-outlined text-xs text-[#00677d]">shield</span><span className="text-xs font-medium text-[#0b1c30]">SSL 256-Bit</span></div>
               </div>
               <h2 className="font-headline text-xl font-bold text-[#0b1c30]">Masuk ke Akun Medvita</h2>
               <p className="text-sm text-[#44474f] pt-1 mb-6">Masukkan kredensial klinis resmi Anda untuk mengaktifkan sesi kerja poliklinik.</p>
@@ -112,7 +105,6 @@ export default function LoginPage() {
                     <input {...register('username')} className="w-full bg-white text-sm rounded-lg pl-10 pr-3 py-2.5 border border-[#c4c6d0] focus:border-[#00677d] outline-none placeholder:text-[#747780]/60" placeholder="cth. admin / dokter / petugas" />
                   </div>
                   {errors.username && <p className="text-xs text-[#ba1a1a] mt-1">{errors.username.message}</p>}
-                  <p className="text-xs text-[#44474f]/70 mt-1">Seed: admin/admin123 · dokter/dokter123 · petugas/petugas123</p>
                 </div>
 
                 <div>
@@ -140,7 +132,7 @@ export default function LoginPage() {
                   </button>
                   <div className="p-3 rounded-xl bg-[#eff4ff] border border-[#c4c6d0]/60 flex flex-col sm:flex-row items-center justify-between gap-2">
                     <div><p className="text-xs font-semibold text-[#0b1c30]">Belum memiliki akun?</p><p className="text-xs text-[#44474f]">Registrasi akun baru untuk dokter &amp; staf pelayanan.</p></div>
-                    <Link to="/register" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#00677d] text-[#00677d] hover:bg-[#00677d] hover:text-white text-xs font-semibold transition-colors shrink-0"><span className="material-symbols-outlined text-xs">person_add</span>Buat Akun Baru / Registrasi Petugas</Link>
+                    <Link to="/register" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#00677d] text-[#00677d] hover:bg-[#00677d] hover:text-white text-xs font-semibold transition-colors shrink-0"><span className="material-symbols-outlined text-xs">person_add</span>Hubungi Petugas Admin</Link>
                   </div>
                 </div>
               </form>

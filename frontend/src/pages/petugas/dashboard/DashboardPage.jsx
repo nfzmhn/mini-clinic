@@ -41,7 +41,7 @@ export default function DashboardPage() {
     mrn: r.patient?.mrn || '-',
     nik: r.patient?.nik || '-',
     poli: r.poli?.name || '-',
-    doctor: r.doctor?.username ? `dr. ${r.doctor.username}` : '-',
+    doctor: r.doctor?.username ? ` ${r.doctor.username}` : '-',
     time: formatTime(r.visitDate || r.createdAt),
     paymentType: r.paymentType,
     status: r.status,
@@ -175,7 +175,6 @@ export default function DashboardPage() {
           <div className="p-5 border-b border-[#c4c6d0]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-[#001637]">Antrean Terkini</h3>
-              <p className="text-xs text-[#44474f] mt-0.5">Daftar antrean admisi dari database MySQL — kode format A-0001.</p>
             </div>
             <button onClick={() => callNextMut.mutate()} disabled={callNextMut.isPending} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#001637] text-white text-xs font-semibold hover:bg-[#0d2b56] shadow-sm disabled:opacity-50">
               <span className="material-symbols-outlined text-base">volume_up</span> Panggil Nomor Berikutnya
@@ -208,7 +207,7 @@ export default function DashboardPage() {
                     <td className="py-3.5 px-5">
                       <div className="flex flex-col">
                         <span className={`font-semibold ${i === 0 ? 'text-[#001637]' : ''}`}>{p.name}</span>
-                        <span className="text-xs text-[#747780]">RM: {p.mrn} • NIK: {p.nik}</span>
+                        <span className="text-xs text-[#747780]">{p.mrn} • NIK: {p.nik}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-5">
@@ -242,7 +241,7 @@ export default function DashboardPage() {
             </table>
           </div>
           <div className="p-4 bg-[#eff4ff]/30 border-t border-[#c4c6d0]/20 flex flex-col sm:flex-row items-center justify-between text-xs text-[#44474f] gap-3">
-            <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> pendaftaran hari ini • Kode antrean DB: A-0001</span>
+            <span>Menampilkan <b className="text-[#0b1c30]">{queue.length}</b> pendaftaran hari ini • Kode antrean</span>
             <span className="text-[#747780]">Sinkron MySQL • auto-generate per poli per hari</span>
           </div>
         </div>

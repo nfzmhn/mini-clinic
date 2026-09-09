@@ -112,7 +112,6 @@ export default function UsersPage() {
           <div className="p-4">
             <div className="p-3 bg-[#e5eeff] rounded-xl flex items-center justify-between">
               <div className="flex flex-col"><span className="text-[0.7rem] font-bold text-[#44474f] uppercase tracking-wider">Login Sebagai</span><span className="text-sm font-bold text-primary">{user?.username || 'Admin'}</span></div>
-              <span className="h-2.5 w-2.5 rounded-full bg-[#00a874] ring-4 ring-[#6ffbbe]/40" />
             </div>
           </div>
           <nav className="px-3 space-y-1">

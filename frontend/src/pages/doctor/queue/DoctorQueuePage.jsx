@@ -66,7 +66,6 @@ export default function DoctorQueuePage() {
                 <span className="text-[0.7rem] font-bold text-[#44474f] uppercase tracking-wider">Dokter</span>
                 <span className="text-sm font-bold text-primary">{user?.username || 'Dokter'}</span>
               </div>
-              <span className="h-2.5 w-2.5 rounded-full bg-[#00a874] ring-4 ring-[#6ffbbe]/40" />
             </div>
           </div>
           <nav className="px-2 space-y-1">
@@ -97,10 +96,6 @@ export default function DoctorQueuePage() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
               <h1 className="font-headline text-xl font-bold text-primary">Antrean Pasien — {user?.username || 'Dokter'}</h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#6ffbbe]/20 border border-[#00a874]/20 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-[#00a874] animate-pulse" />
-                <span className="text-xs font-semibold text-[#005236]">Live · refresh tiap 8 detik</span>
-              </span>
             </div>
             <p className="text-sm text-[#44474f]">Pasien yang dialokasikan ke dokter ini hari ini. Halaman otomatis diperbarui.</p>
           </div>
